@@ -129,26 +129,27 @@ void TimeControls::updateUI()
     mLoopButton->setChecked(playback->isLooping());
 }
 
+void TimeControls::setEditor(Editor* editor)
+{
+    Q_ASSERT(editor != nullptr);
+    mEditor = editor;
+}
+
 void TimeControls::setFps(int value)
 {
     SignalBlocker blocker(mFpsBox);
     mFpsBox->setValue(value);
 }
 
-void TimeControls::toggleLoop(bool checked)
+void TimeControls::setLoop(bool checked)
 {
     mLoopButton->setChecked(checked);
 }
 
-void TimeControls::toggleLoopControl(bool checked)
+void TimeControls::setRangeState(bool checked)
 {
     mPlaybackRangeCheckBox->setChecked(checked);
-}
-
-void TimeControls::setEditor(Editor* editor)
-{
-    Q_ASSERT(editor != nullptr);
-    mEditor = editor;
+    mTimeline->updateLength();
 }
 
 void TimeControls::makeConnections()
@@ -161,19 +162,18 @@ void TimeControls::makeConnections()
 
     auto spinBoxValueChanged = static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged);
     connect(mLoopStartSpinBox, spinBoxValueChanged, this, &TimeControls::loopStartValueChanged);
+    clearFocusOnFinished(mLoopStartSpinBox);
     connect(mLoopEndSpinBox, spinBoxValueChanged, this, &TimeControls::loopEndValueChanged);
+    clearFocusOnFinished(mLoopEndSpinBox);
 
     connect(mPlaybackRangeCheckBox, &QCheckBox::toggled, mLoopStartSpinBox, &QSpinBox::setEnabled);
     connect(mPlaybackRangeCheckBox, &QCheckBox::toggled, mLoopEndSpinBox, &QSpinBox::setEnabled);
 
-    connect(mSoundButton, &QPushButton::clicked, this, &TimeControls::soundClick);
+    connect(mSoundButton, &QPushButton::clicked, this, &TimeControls::soundToggled);
     connect(mSoundButton, &QPushButton::clicked, this, &TimeControls::updateSoundIcon);
-    auto connection = connect(mFpsBox, spinBoxValueChanged, this, &TimeControls::fpsClick);
-    if(!connection)
-    {
-        // Use "editingFinished" if the "spinBoxValueChanged" signal doesn't work...
-        connect(mFpsBox, &QSpinBox::editingFinished, this, &TimeControls::onFpsEditingFinished);
-    }
+
+    connect(mFpsBox, spinBoxValueChanged, this, &TimeControls::fpsChanged);
+    connect(mFpsBox, &QSpinBox::editingFinished, this, &TimeControls::onFpsEditingFinished);
 }
 
 void TimeControls::playButtonClicked()
@@ -229,7 +229,6 @@ void TimeControls::loopButtonClicked(bool bChecked)
 void TimeControls::playbackRangeClicked(bool bChecked)
 {
     mEditor->playback()->enableRangedPlayback(bChecked);
-    mTimeline->updateLength();
 }
 
 void TimeControls::loopStartValueChanged(int i)
@@ -264,7 +263,8 @@ void TimeControls::updateSoundIcon(bool soundEnabled)
 
 void TimeControls::onFpsEditingFinished()
 {
-    emit fpsClick(mFpsBox->value());
+    mFpsBox->clearFocus();
+    emit fpsChanged(mFpsBox->value());
 }
 
 void TimeControls::updateLength(int frameLength)

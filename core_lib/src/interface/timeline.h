@@ -59,7 +59,6 @@ Q_SIGNALS:
     void addKeyClick();
     void removeKeyClick();
     void duplicateKeyClick();
-    void toogleAbsoluteOnionClick();
 
     void newBitmapLayer();
     void newVectorLayer();
@@ -67,7 +66,7 @@ Q_SIGNALS:
     void newCameraLayer();
 
     void soundClick( bool );
-    void fpsClick( int );
+    void fpsChanged( int );
     void onionPrevClick();
     void onionNextClick();
     void playButtonTriggered();
